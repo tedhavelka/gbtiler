@@ -1,0 +1,95 @@
+=head1 NAME
+
+gbtiler - Gbtiler is a program that can offset and merge gerber and NC drill files that represent circuit board artwork. 
+
+=head1 SYNOPSIS
+
+  --argfile [filename]      name of file of additional options.
+                            Multiple argument files may be specified
+                            on the command line which invokes gbtiler
+                            but --argfile tags in external arguments
+                            files are basically ignored.  In typical
+                            use, only one external argument file
+                            should be needed anyway.
+
+
+=head1 DESCRIPTION 
+  most arguments are passed in a separate file, rather than
+  on the command line when gbtiler is invoked,
+  most file data is read line by line and written out to
+  intermediate or final file as soon as processing is complete,
+  
+  GBTILER OPTIONS 
+
+  --gerberfile [filename]   filename of Gerber source file to tile.
+
+  --drillfile [filename]    filename of NC drill file to tile.
+
+  --rackfile [filename]     filename of rack or tool file to
+                            accompany a given NC drill file.
+
+  --outfile [filename]      output file name for tiled layer which
+                            may be either a tiling of RS274X Gerber
+                            files or a tiling of NC drill files, but
+                            not a mix of both.
+
+  --path  [pathname]        path to prepend to all files up to next
+                            --path option.  This option makes it
+                            easier to include files to tile that are
+                            located in different directories.  When
+                            encountered, the script updates an
+                            variable as it builds the hash of circuit
+
+  GLOBAL GBTILER OPTIONS:
+
+  The following gbtiler options normally would only appear once in
+  a list of arguments directing the processing work of gbtiler:
+
+  --offset [n.n,n.n]        offset to apply to input file data,
+                            where n.n represent a real value whose
+                            precision is limited practically to the
+                            resolution of the board producing house,
+                            and whose resolution is limited
+                            programmatically to the precision of
+                            floating point supported by the end-
+                            user's version of Perl.
+
+  --leading_zeroes [n]      toggles leading zero formatting on 
+                            and off. Not yet fully implemented
+                            in gbtiler 2.0.
+
+  --trailing_zeroes [n]     toggles trailing zero formatting on
+                            and off. 
+  
+  --x_integer_digits [n]    output file coordinate formatting,
+                            n is an integer value between 1 and 6
+                            inclusive.  This description of n
+                            applies to the remaining global
+                            arguments in this list.
+
+  --x_decimal_digits [n]    output file coordinate formatting,
+
+  --y_integer_digits [n]    output file coordinate formatting,
+
+  --y_decimal_digits [n]    output file coordinate formatting.
+
+
+
+ VERSION 2.0 GLOBAL OPTIONS:
+
+  --created_by [program name]   not yet implemented, and may not be
+                                needed for external drill rack
+                                processing.
+
+  --drill_substitution ["apc"]  this option currently toggles on and
+                                off a limited drill size substituting
+                                routine which tries to simplify the
+                                set of drills used in a file to the
+                                seven standard drills available at
+                                Alberta Printed Circuits, Inc.
+                                Drill sizes outside this set add
+                                extra charges to the cost of
+                                producing a board.
+
+
+=cut

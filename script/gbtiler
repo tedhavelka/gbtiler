@@ -1,0 +1,365 @@
+#!/usr/bin/perl -w
+
+#---------------------------------------------------------------------
+#
+#   project:  gbtiler 2.0
+#  filename:  gbtiler
+#   created:  2002-07-17
+#  modified:  2007-03-05
+#
+#...;....1....;....2....;....3....|....4....;....5....;....6....;....7
+
+
+
+#--------------------------------------------------------------------#
+#
+#  SYNOPSIS:
+#
+#  This script drives and tests the combination of Perl packages
+#  that comprise the project 'gbtiler 2.0'.  This a gerber file and
+#  NC drill file offsetting and merging program, text based.
+#
+#  To view gerber and NC drill files, you may want to download and
+#  use one of these gerber viewers:
+#
+#     gerbv          ...an opensource Gerber viewer at SourceForge
+#     Lavenir        ...a Gerber viewer
+#     GCPreview      ...also spelled 'GCPrevue'
+#
+#  These viewers also display NC drill file artwork, with varying
+#  degrees of massaging and cajouling.
+#
+#
+#
+#
+#  IMPLEMENTATION:   
+#
+#  Important ideas in the use and code implementation of this project
+#  include,
+#
+#     +  most arguments are passed in a separate file, rather than  
+#        on the command line when gbtiler is invoked,
+#
+#     +  most file data is read line by line and written out to
+#        intermediate or final file as soon as processing is complete,
+#
+#
+#
+#
+#  NOTES ON CODING:
+#   
+#  To pass a sub-key of a hash table by reference to an external   
+#  routine, one may use the Perl syntax in this example.  The first
+#  lines just above the vertical ellipses instantiate a package, which 
+#  contains the external routine, and declare a local hash table.  The
+#  line which calls a routine is where the slight change takes place:
+#  the hash's name is preceded by a dollar sign instead of a percent
+#  symbol, but author Ted found this change to work only in the when
+#  passing a sub-key of the hash, and not while trying to pass the
+#  entire hash by reference,
+#
+#
+#     my $packageReference = new Package;
+#     my %hashName;
+#        .   
+#        .   
+#        .   
+#     $packageReference->routine( $hashName{$keyName} );   
+#   
+#   
+#  To pass an entire hash by reference, this syntax seems to work,   
+#   
+#   
+#     routine( \%hashName );   
+#   
+#   
+#  For a called routine to return a value as a hash table, one may 
+#  use Perl syntax where a reference is bounded by curly braces and
+#  these as a pair are preceded by a percent symbol.  This is akin to
+#  type-casting in the language of C, 
+#   
+#   
+#      return %{ $self{layer} };
+#   
+#   
+#   
+## This line is an example of how you could capture various elements
+## of a gerber aperture description line:
+##
+##    ($directive, $name, $shape, $size) = $line =~ /(^.*AD)(D\d+)([A-Z0-9]+),(.+)/;
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#  HISTORY:   
+#   
+#  ...
+#   
+#  2004-07-xx     Gbtiler 2.0 adds multi-layer tiling (output file 
+#                 gen'd for each layer) and NC drill tiling support.
+#
+#
+#  SOME HISTORY DETAILS...
+#
+#  Porting over the gbtiler 1.0 scripts to the 2.0 framework, it is
+#  important to talk about the way each set of scripts receives data
+#
+#
+#
+#
+#
+#  AUTHORS:   
+#
+#  Ted Havelka    ted(a)cs.pdx.edu   
+#
+#---------------------------------------------------------------------
+
+
+
+use strict;
+
+
+
+use Diagnostic;
+use TilerArguments;
+use DrillRacks;
+use DrillTiler;
+use Header;
+use Macros;
+use Apertures;
+use Offsetter;
+
+
+
+use CGI;
+use CGI::Carp qw(fatalsToBrowser);
+
+
+
+#====================================================================#
+#                          Main code block                           #
+#====================================================================#
+{
+
+## Instantiate gbtiler packages:
+
+   my $Diagnostics        = new Diagnostic;
+   my $ArgumentManager    = new TilerArguments;
+   my $DrillRackManager   = new DrillRacks;
+   my $DrillTilingManager = new DrillTiler;
+   my $HeaderManager      = new Header;
+   my $MacroManager       = new Macros;
+   my $ApertureManager    = new Apertures;
+   my $OffsetManager      = new Offsetter;
+
+
+
+
+## Declare local variables:
+
+   my %job;             # hash table, holds current tiling job information
+   my $key1;            # string, name of top level job hash key
+   my $workDirectory;   # string, dir' for intermediate and tiled files
+   my $result;          # integer, used as flag to test directory creation
+   my $filename;        # string, name of current source file
+   my $filetype;        # string, type (drill or gerber) of current source file
+
+   my $projectName;     # string
+   my $sname;           # string
+   my $trace;           # integer, acts as boolean flag
+   my $msg;             # string
+
+
+
+
+## Initialize local variables:
+
+   $projectName = "gbtiler 2.0";
+   $sname = "gbtiler";
+   $trace = 1;
+   $msg = "";
+
+
+
+
+## Initialize gbtiler packages:
+
+   $ArgumentManager->initialize($Diagnostics, "identify"); 
+   $DrillRackManager->initialize($Diagnostics, $projectName);
+   $DrillTilingManager->initialize($Diagnostics, $projectName);
+   $HeaderManager->initialize($Diagnostics, $projectName);
+   $MacroManager->initialize($Diagnostics, $projectName);
+   $ApertureManager->initialize($Diagnostics, $projectName);
+   $OffsetManager->initialize($Diagnostics, $projectName);
+
+
+
+
+## top-of-code-block diagnostics:
+
+   $msg = "";
+   $msg .= "$sname:  version 2.0 starting,\n";
+   print $msg;
+
+
+
+
+## Process arguments for the current gbtiler process:
+
+   $ArgumentManager->process_arguments(\@ARGV);
+   $ArgumentManager->check_job_tree_integrity();
+   %job = $ArgumentManager->current_job();
+ 
+
+
+
+
+## Check and if needed create a temporary work directory, also used
+## to hold final results:
+
+
+   $workDirectory = $job{workDirectory};
+  
+   if ( -e $workDirectory )
+   {  
+      $msg = "$sname:  found work directory '$workDirectory', beginning tiling work...\n\n";
+      print $msg if ($trace);
+   }
+
+   else
+   {
+      $msg = "$sname:  creating work directory for intermediate and final, tiled files,\n";
+      $msg .= "$sname:  beginning tiling work...\n\n";
+      print $msg if ($trace);
+      $result = mkdir( $workDirectory, 0755 );
+
+      if ( $result == 0 )
+      {
+         $msg = "$sname:  ERROR,\n";
+         $msg .= "$sname:  could not find or create directory '$workDirectory',\n";
+         $msg .= "$sname:  for intermediate and tiled output files.\n";
+         $msg .= "$sname:  do you have write permission in this directory?\n";
+         $msg .= "$sname:  finished without tiling any files,\n\n";
+         print $msg;
+         exit(0);
+      }
+   }
+   
+
+
+## -------------------------------------------------------------------
+## 
+## The following code, in nested loop fashion, performs these tasks:
+## 
+## 1) scans the job hash table for layers of the current tiling job.
+## 
+## Either gerber tiling scripts or NC drill tiling scripts are
+## passed data from the job hash tree on a per layer basis.  Those
+## scripts know how to handle tiling work one layer at a time.
+## 
+## This driving script for gbtiler 2.0 assumes that the job hash is
+## valid and complete.  In other words, all necessary keys are present
+## and data pointed to by the keys is valid, e.g. files exists, data
+## are of correct type and within valid ranges when ranges apply.
+## 
+## -------------------------------------------------------------------
+
+   foreach $key1 ( sort ( keys %job ) )
+   {
+      
+      if ( $key1 =~ /^layer_/ )
+      {
+         $filetype = $job{$key1}{filesOfType};
+
+         $msg = "$sname:  processing layer '$key1',\n";
+         $msg .= "$sname:  this holds files of type '$filetype'\n\n";
+         print $msg;
+
+
+
+         if ( $filetype eq "gerber" )
+         {
+            $HeaderManager->store_headers( $job{$key1} );
+            $HeaderManager->check_gerber_precision( \%job, $job{format} );
+            $HeaderManager->store_numeric_formats( $job{format} );
+            $HeaderManager->write_header( $job{$key1} );
+
+            $MacroManager->store_macros( $job{$key1} );
+            $MacroManager->write_macro_definitions( $job{$key1} );
+
+            $ApertureManager->store_apertures( $job{$key1} );
+            $ApertureManager->write_aperture_definitions( $job{$key1} );
+            $ApertureManager->substitute_apertures( $job{$key1} ); 
+         
+            $OffsetManager->offset_coordinates( $job{$key1}, $job{format} );
+         }
+
+
+
+         elsif ( $filetype eq "drill" )
+         {  
+            $DrillRackManager->store_drill_racks( $job{$key1} );
+            $DrillRackManager->build_master_drill_rack( $job{$key1} );
+            $DrillRackManager->write_master_drill_rack( $job{$key1} );
+
+            $DrillTilingManager->check_leading_zeroes( $job{$key1} );
+            $DrillTilingManager->offset_and_merge( $job{$key1} );
+         }
+
+         else
+         {
+            $msg = "$sname:  WARNING\n";
+            $msg .= "$sname:  encountered layer of filetype '$filetype',\n";
+            $msg .= "$sname:  gbtiler doesn't know how to parse or tile this type of file,\n";
+            $msg .= "$sname:  \n";
+            print $msg;
+         }
+
+      } # . . . . . . end of loop filtering for layers
+
+   } # . . . . . . .  end of loop for each primary key in job hash
+
+
+
+
+## -------------------------------------------------------------------
+## As of 2004-08-15, tiling is the sole task that gbtiler 2.0 attempts
+## to complete.  There is still little error checking, so the
+## following line which modifies the status of the job really means 
+## "tilable work has been tiled".  
+##
+## In the future gbtiler may also offer other tasks, such as drill
+## size reports, counts and summaries of aperture definitions and 
+## macros.  There will definitely be more detailed reporting on errors
+## encountered during a given tiling job.  But for now, job status is
+## set to 'done' when the script makes it to this point without 
+## fatally crashing.
+## -------------------------------------------------------------------
+
+   $job{status} = "done";
+
+
+
+
+## Some final diagnostics:
+
+   if ($trace)
+   {
+      $msg = "$sname:  final job hash standing:\n\n";
+      print $msg;
+      $Diagnostics->show_hash_tree_primer( \%job, "gbtiler 2.0 final job hash" );
+   }
+
+
+   $msg = "\n";
+   print $msg;
+
+## -------------------------------------------------------------------
+
+   print "$sname:  done.\n\n";
+
+}
+

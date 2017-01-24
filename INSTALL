@@ -1,0 +1,41 @@
+AUTOMATIC INSTALLATION
+
+A. DECOMPRESS
+
+    Decompress the file with gzip -d gbtiler2.tar.gz
+    You can get gzip from ftp://prep.ai.mit.edu/pub/gnu.
+
+    Or, you can combine this step with the next to save disk space:
+
+    gzip -dc gbtiler2.tar.gz | tar -xof - 
+
+B. UNPACK
+
+    Unpack the result with tar -xof gbtiler2.tar 
+
+C. BUILD
+
+    Go into the newly-created directory and type:
+
+    perl Makefile.PL
+    make
+
+D. INSTALL
+
+    While still in that directory, type:
+
+    make install
+
+    Make sure you have the appropriate permissions to install the module in your Perl 5 library directory. 
+Often, you'll need to be root.
+
+    That's all you need to do on Unix systems with dynamic linking. Most Unix systems have dynamic 
+linking -- if yours doesn't, or if for another reason you have a statically-linked perl, and the 
+module requires compilation, you'll need to build a new Perl binary that includes the module. 
+Again, you'll probably need to be root. 
+
+
+In our installation, I have installed required modules in:
+        /usr/local/lib/perl5/site_perl/
+
+

@@ -1,0 +1,40 @@
+GBTILER VERSION 2.0
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+Gbtiler is a program that can offset and merge gerber and NC drill files 
+that represent circuit board artwork. This program is written in perl 
+and licensed under the GNU public license. This is the latest release
+of version 2.0.
+
+By using gbtiler, common layers from multiple circuit boards may be merged
+and offset into one or more large files, each holding a layer of the combined
+board artwork. Gbtiler 2.0 processes gerber Cartesian data and gerber arc 
+statements, and NC drill file data. Both RS274X gerber and NC drill languages, 
+however, offer a rich set of plotting and drilling directives. Gbtiler doesn't 
+handle all or even most of the more complex, obscure gerber and drill statements. 
+
+HOW TO USE GBTILER 2.0
+
+Setting up gbtiler 2.0
+  For information on installing gbtiler2, see the INSTALL file included in
+  the distribution.  For other documentation, see the gbtiler.pod file.
+
+you can invoke gbtiler with the following line,  
+
+   gbtiler --argfile ../examples/test-args--relay-and-icd.txt
+
+After running gbtiler both temporary files and final tiled files are written 
+to a directory named 'workspace'. This directory is not part of the 2.0 release, 
+but is created when gbtiler doesn't find it and has permission to do so. 
+Then you can view the result of gbtiler in gerber viewer.
+
+The general things a user must specify to gbtiler include,  
+
+    * source gerber and/or drill files and their locations,
+    * offset values to position tiled files,
+    * some formatting information to format the output file,
+    * name of output file, 
+
+For more information about gbtiler visit http://gbtiler.sourceforge.net/
